@@ -12,7 +12,7 @@ def virify_saltpassword(hash_password: bytes, password: str):
     return bcrypt.checkpw(password.encode('utf-8'), hash_password) 
 
 # print(create_saltpassword("123"))
-print(virify_saltpassword(create_saltpassword("123"), "124"))
+print(virify_saltpassword(create_saltpassword("12323"), "124"))
 print(virify_saltpassword(create_saltpassword("123"), "123"))
 
 
