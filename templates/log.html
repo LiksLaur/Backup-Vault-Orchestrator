@@ -28,8 +28,14 @@
         const passwordEl = document.getElementById('password')
         const password = passwordEl.value;
 
-        let promise = fetch("http://127.0.0.1:8000/get_jwt?username="+username+"&password="+password)
-        console.log(promise)
+        
+
+        fetch("http://127.0.0.1:8000/get_jwt?username="+username+"&password="+password).then(response => response.json()).then(data => {
+            console.log(data); // Вывод в консоль
+        })
+        .catch(error => {
+            console.error('Ошибка:', error);
+        });
     });
     
 
