@@ -9,6 +9,11 @@
     <div class="form_auth_block">
         <div class="form_auth_block_content">
             <p class="form_auth_block_head_text">Login</p>
+            {% if success_message %}
+            <div style="color: green; margin-bottom: 10px; padding: 10px; background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px;">
+                {{ success_message }}
+            </div>
+            {% endif %}
             <form class="form_auth_style" action="#" method="post">
                 <label>Username</label>
                 <input type="text" id="username" name="auth_username" placeholder="Username" required >
@@ -30,7 +35,10 @@
 
         
 
-        fetch("http://127.0.0.1:8000/get_jwt?username="+username+"&password="+password).then(response => response.json()).then(data => {
+        fetch("http://127.0.0.1:5500/get_jwt?username="+username+"&password="+password, {
+            method: 'GET',
+            credentials: 'include'  // Включаем отправку куки
+        }).then(response => response.json()).then(data => {
             console.log(data); // Вывод в консоль
         })
         .catch(error => {

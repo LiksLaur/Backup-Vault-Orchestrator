@@ -9,16 +9,46 @@
     <div class="form_auth_block">
         <div class="form_auth_block_content">
             <p class="form_auth_block_head_text">Regestration</p>
-            <form class="form_auth_style" action="#" method="post">
+            <form class="form_auth_style" action="http://127.0.0.1:8000/adduser" method="get">
             <label>Username</label>
-            <input type="text" name="auth_username" placeholder="Username" required >
+            <input type="text" id="username" name="username" placeholder="Username" required >
             <label>Password</label>
-            <input type="password" name="auth_password" placeholder="Password" required >
+            <input type="password" id="password" name="password" placeholder="Password" required >
             <label>Repeat password</label>
             <input type="repeat_password" name="auth_repeat_password" placeholder="repeat_password" required >
-            <button class="form_auth_button" type="submit" name="form_auth_submit">Войти</button>
+            <button class="form_auth_button" type="submit" name="form_auth_submit">Зарегистрироваться</button>
             </form>
         </div>
     </div>
 </body>
+<script>
+    document.querySelector('.form_auth_style').addEventListener('submit', function(event) {
+        event.preventDefault()
+        const usernameEl = document.getElementById('username')
+        const username = usernameEl.value;
+
+        const passwordEl = document.getElementById('password')
+        const password = passwordEl.value;
+
+        fetch("http://127.0.0.1:5500/adduser?username="+username+"&password="+password, {
+            method: 'GET',
+            credentials: 'include',
+            redirect: 'follow'  // Следуем за redirect'ами
+        }).then(response => {
+            // Если получили redirect, перенаправляем вручную
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else {
+                return response.json();
+            }
+        }).then(data => {
+            if (data) {
+                console.log(data);
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка:', error);
+        });
+    });
+</script>
 </html>
