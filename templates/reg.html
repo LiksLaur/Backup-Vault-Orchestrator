@@ -30,25 +30,19 @@
         const passwordEl = document.getElementById('password')
         const password = passwordEl.value;
 
+        
+
         fetch("http://127.0.0.1:5500/adduser?username="+username+"&password="+password, {
             method: 'GET',
-            credentials: 'include',
-            redirect: 'follow'  // Следуем за redirect'ами
-        }).then(response => {
-            // Если получили redirect, перенаправляем вручную
-            if (response.redirected) {
-                window.location.href = response.url;
-            } else {
-                return response.json();
-            }
-        }).then(data => {
-            if (data) {
-                console.log(data);
-            }
+            credentials: 'include'  // Включаем отправку куки
+        }).then(response => response.json()).then(data => {
+            console.log(data); // Вывод в консоль
         })
         .catch(error => {
             console.error('Ошибка:', error);
         });
     });
+    
+
 </script>
 </html>

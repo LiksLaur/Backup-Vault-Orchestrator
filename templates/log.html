@@ -35,7 +35,7 @@
 
         
 
-        fetch("http://127.0.0.1:5500/get_jwt?username="+username+"&password="+password, {
+        fetch("http://127.0.0.1:5500/checkuser?username="+username+"&password="+password, {
             method: 'GET',
             credentials: 'include'  // Включаем отправку куки
         }).then(response => response.json()).then(data => {
