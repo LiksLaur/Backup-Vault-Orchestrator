@@ -3,10 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Main</title>
 </head>
 <body>
-    <h1>main page</h1>
-    <h1>data: {{ test }}</h1>
+    <h1>Главная</h1>
+    <p>Вы вошли как: <strong>{{ username if username else 'гость' }}</strong></p>
+    <button id="check_jwt">Проверить сессию</button>
+    <pre id="check_result"></pre>
 </body>
+<script>
+document.getElementById('check_jwt').addEventListener('click', function() {
+    const out = document.getElementById('check_result');
+    out.textContent = '...';
+    fetch('/check', { credentials: 'include' })
+      .then(async (r) => {
+        const data = await r.json();
+        out.textContent = JSON.stringify(data, null, 2);
+        if (r.status === 401) {
+          window.location.href = '/log';
+        }
+      })
+      .catch((e) => {
+        out.textContent = e.message || String(e);
+      });
+});
+</script>
 </html>

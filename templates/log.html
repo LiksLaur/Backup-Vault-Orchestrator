@@ -21,6 +21,7 @@
                 <input type="password" id="password" name="auth_password" placeholder="Password" required >
                 <button class="form_auth_button" type="submit" name="form_auth_submit">Войти</button>
             </form>
+            <div id="login_error" style="color: #b00020; margin-top: 10px;"></div>
         </div>
     </div>
 </body>
@@ -33,16 +34,24 @@
         const passwordEl = document.getElementById('password')
         const password = passwordEl.value;
 
-        
+        const errorBox = document.getElementById('login_error')
+        errorBox.textContent = ''
 
-        fetch("http://127.0.0.1:5500/checkuser?username="+username+"&password="+password, {
+        fetch(`/checkuser?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`, {
             method: 'GET',
-            credentials: 'include'  // Включаем отправку куки
-        }).then(response => response.json()).then(data => {
-            console.log(data); // Вывод в консоль
+            credentials: 'include'
+        })
+        .then(async (response) => {
+            const data = await response.json();
+            if (!response.ok || data.ok === false) {
+                throw new Error(data.error || 'Ошибка входа');
+            }
+            if (data.redirect) {
+                window.location.href = data.redirect;
+            }
         })
         .catch(error => {
-            console.error('Ошибка:', error);
+            errorBox.textContent = error.message || 'Ошибка входа';
         });
     });
     

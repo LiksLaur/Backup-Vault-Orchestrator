@@ -8,16 +8,17 @@
 <body>
     <div class="form_auth_block">
         <div class="form_auth_block_content">
-            <p class="form_auth_block_head_text">Regestration</p>
-            <form class="form_auth_style" action="http://127.0.0.1:8000/adduser" method="get">
+            <p class="form_auth_block_head_text">Registration</p>
+            <form class="form_auth_style" action="#" method="post">
             <label>Username</label>
             <input type="text" id="username" name="username" placeholder="Username" required >
             <label>Password</label>
             <input type="password" id="password" name="password" placeholder="Password" required >
             <label>Repeat password</label>
-            <input type="repeat_password" name="auth_repeat_password" placeholder="repeat_password" required >
+            <input type="password" id="repeat_password" name="auth_repeat_password" placeholder="Repeat password" required >
             <button class="form_auth_button" type="submit" name="form_auth_submit">Зарегистрироваться</button>
             </form>
+            <div id="reg_error" style="color: #b00020; margin-top: 10px;"></div>
         </div>
     </div>
 </body>
@@ -29,17 +30,32 @@
 
         const passwordEl = document.getElementById('password')
         const password = passwordEl.value;
+        const repeatEl = document.getElementById('repeat_password')
+        const repeatPassword = repeatEl.value;
 
-        
+        const errorBox = document.getElementById('reg_error')
+        errorBox.textContent = ''
 
-        fetch("http://127.0.0.1:5500/adduser?username="+username+"&password="+password, {
+        if (password !== repeatPassword) {
+            errorBox.textContent = 'Пароли не совпадают';
+            return;
+        }
+
+        fetch(`/adduser?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`, {
             method: 'GET',
-            credentials: 'include'  // Включаем отправку куки
-        }).then(response => response.json()).then(data => {
-            console.log(data); // Вывод в консоль
+            credentials: 'include'
+        })
+        .then(async (response) => {
+            const data = await response.json();
+            if (!response.ok || data.ok === false) {
+                throw new Error(data.error || 'Ошибка регистрации');
+            }
+            if (data.redirect) {
+                window.location.href = data.redirect;
+            }
         })
         .catch(error => {
-            console.error('Ошибка:', error);
+            errorBox.textContent = error.message || 'Ошибка регистрации';
         });
     });
     
