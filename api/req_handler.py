@@ -133,61 +133,69 @@ async def reg_page(request: Request):                                           
 
 
 
-@app.get("/get_jwt")
-def get_jwt(username: str, response: Response):
-    token = auth.create_access_token(uid=username)
-    response.set_cookie(config.JWT_ACCESS_COOKIE_NAME, token, httponly=True, samesite="lax")
-    return JSONResponse({"status": "ok"})
+@app.get("/get_jwt")                                                            # обработчик get на /get_jwt генерация токена 
+def get_jwt(username: str, response: Response):                                 # функция для /get_jwt с передачей юз для генерации токена и респонса для записи токена в куки
+    token = auth.create_access_token(uid=username)                              # генерация токена по юз
+    response.set_cookie(config.JWT_ACCESS_COOKIE_NAME, token, httponly=True, samesite="lax") # установкаjwt в куки jwt с ключом как name из конфига 
+    return JSONResponse({"status": "ok"})                                                    
 
 
-@app.get("/check")
-def check_jwt(request: Request):
+@app.get("/check")                                                              # обработчик get на /check для проверки валидности токена 
+def check_jwt(request: Request):                                                # функция для /get_jwt с регуеста для проверки токена в куках
     token = request.cookies.get(config.JWT_ACCESS_COOKIE_NAME)
     if not token:
-        return JSONResponse({"error": "Token missing in cookies"}, status_code=401)
+        return JSONResponse({"error": "Token missing in cookies"}, status_code=401) # если токена нет вернуть ошибку со статус кодом 401
     try:
-        auth._decode_token(token)
+        auth._decode_token(token)                                                   # пробуется декодировать токен
         return {"status": "ok"}
     except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=401)
+        return JSONResponse({"error": str(e)}, status_code=401)                     # если не получается то возврат ошибки с описанием + статус код 401
 
 
-@app.get("/allusers")
-async def get_users():
-    cur.execute("SELECT id, username FROM users")
-    rows = cur.fetchall()
-    return [{"id": r[0], "username": r[1]} for r in rows]
+@app.get("/checkuser")                                                              # обработчик get на /checkuser для проверки пользователя
+async def user_check(username: str, password: str, response: Response):             # асинхронная функция принимаюяя юз пасворд и респонс для записи в куки
+    if not username or not password:                                                # если не передан проль или юз то
+        return JSONResponse({"ok": False, "error": "Missing username or password"}, status_code=400)    # возврат ошибки с статус кодом 400
 
+    if not check_userpassword_exists(username, password):                                               # проверка пользователя с правильным юз и паролем
+        return JSONResponse({"ok": False, "error": "Invalid credentials"}, status_code=401)             # если нет то ошибка со статус кодом 401
 
-@app.get("/checkuser")
-async def user_check(username: str, password: str, response: Response):
-    if not username or not password:
-        return JSONResponse({"ok": False, "error": "Missing username or password"}, status_code=400)
-
-    # True means user exists with matching password
-    if not check_userpassword_exists(username, password):
-        return JSONResponse({"ok": False, "error": "Invalid credentials"}, status_code=401)
-
-    token = auth.create_access_token(uid=username)
-    response.set_cookie(config.JWT_ACCESS_COOKIE_NAME, token, httponly=True, samesite="lax")
+    token = auth.create_access_token(uid=username)                                                      # генерация токена для существующего пользователя 
+    response.set_cookie(config.JWT_ACCESS_COOKIE_NAME, token, httponly=True, samesite="lax")            # запись токена в куки 
     return {"ok": True, "redirect": "/main"}
     
 
-@app.get("/adduser")
-async def add_user(username: str, password: str, response: Response):
-    if not username or not password:
-        return JSONResponse({"ok": False, "error": "Missing username or password"}, status_code=400)
+@app.get("/adduser")                                                                                    # обработчик get на /adduser для добавления пользователя
+async def add_user(username: str, password: str, response: Response):                                   # асинхронная функция принимает юз пасворд и респонс для записи в куки jwt 
+    if not username or not password:                                                                    # если не передан проль или юз то
+        return JSONResponse({"ok": False, "error": "Missing username or password"}, status_code=400)    # возврат ошибки с статус кодом 400
 
-    if check_user_exists(username):
-        return JSONResponse({"ok": False, "error": "Username already taken"}, status_code=409)
+    if check_user_exists(username):                                                                     # проверка занят ли юз
+        return JSONResponse({"ok": False, "error": "Username already taken"}, status_code=409)          # возврат ошибки с статус кодом 409
 
     try:
-        cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, password))
-        conn.commit()
-    except Exception as err:
-        return JSONResponse({"ok": False, "error": str(err)}, status_code=500)
+        cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, password))     # попытка вставить данные 
+        conn.commit()       
+    except Exception as err:                                        
+        return JSONResponse({"ok": False, "error": str(err)}, status_code=500)                          # выозврат ошибки со статус кодом 500
     else:
-        token = auth.create_access_token(uid=username)
-        response.set_cookie(config.JWT_ACCESS_COOKIE_NAME, token, httponly=True, samesite="lax")
+        token = auth.create_access_token(uid=username)                                                  # если нет ошибок то генерируется токен на основе юза
+        response.set_cookie(config.JWT_ACCESS_COOKIE_NAME, token, httponly=True, samesite="lax")        # записывается в куки
         return {"ok": True, "redirect": "/main"}
+    
 
+### ДЛЯ РАЗРАБОТКИ ###
+### ↓ ↓ ↓ ↓ ↓ ↓ ↓  ###
+
+@app.get("/allusers")                                                               # обработчик get на /allusers для возврата всех юзеров из бд
+async def get_users():
+    cur.execute("SELECT id, username FROM users")                                   # исполнение запрса
+    rows = cur.fetchall()                                                           # получение того что вернла субд
+    return [{"id": r[0], "username": r[1]} for r in rows]                           # возврат массива обьектов где к каждому id преписывается id из соответсвующей строки и username так же из строки
+
+
+# хттп статус коды
+# 400 - неправильный запрос
+# 401 - неавторизованн
+# 409 - конфлкт ( пользователь уже существует )
+# 500 - ошибка сервера (запрос в бд не пошлучился)
