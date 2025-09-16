@@ -5,11 +5,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from authx import AuthX, AuthXConfig
 import psycopg2
 from psycopg2 import OperationalError
+from crypto.crypto_def import create_saltpassword, virify_saltpassword
 # Request для взаимодействия с данными запроса в моем случаи только с куки для получения
 # Responseдля взаимодействия с данными запроса в моем случаи только с куки для записи
 # HTMLResponse модель ответа для возврата страниц
 # RedirectResponse для переадрусации
 # JSONResponse для ответа в виде джейсона
+# crypto_def для работы с паролями
 # Jinja2Templates для понимание где директория с темлейтами
 # CORSMiddleware исользовал для cors политики что бы записывать куки (пс бех этого не работало)
 # OperationalError для обработки ошибок в psql
@@ -81,14 +83,35 @@ def check_user_exists(username: str) -> bool:           # для того что
     )
     return _run_exists_query(sql, (username,))          # исполнение запроса, подключение, экскепт ошидок
 def check_userpassword_exists(username: str, password: str) -> bool:    # проверить совпадают ли пароль + логин в бд
-    sql = (                                                             # ззапрос на проверку
-        """
-        SELECT EXISTS (
-            SELECT 1 FROM users WHERE username = %s AND password = %s
-        );
-        """
-    )
-    return _run_exists_query(sql, (username, password))                 # исполнение запроса, подключение, экскепт ошидок
+    # Получаем хэш пароля по имени пользователя и проверяем через bcrypt
+    connection = None
+    try:
+        connection = psycopg2.connect(
+            dbname="bvo",
+            user="postgres",
+            password="Pgadmin",
+            host="localhost",
+            port="5432",
+        )
+        cursor = connection.cursor()
+        cursor.execute(
+            "SELECT password FROM users WHERE username = %s LIMIT 1",
+            (username,),
+        )
+        row = cursor.fetchone()
+        if not row or row[0] is None:
+            return False
+        stored_hash_text = row[0]
+        # Храним как текст -> переводим обратно в bytes для проверки
+        stored_hash_bytes = stored_hash_text.encode("utf-8") if isinstance(stored_hash_text, str) else stored_hash_text
+        return virify_saltpassword(stored_hash_bytes, password)
+    except OperationalError as e:
+        print(f"Ошибка подключения к базе данных: {e}")
+        return False
+    finally:
+        if connection:
+            cursor.close()
+            connection.close()
 
 
 
@@ -174,7 +197,10 @@ async def add_user(username: str, password: str, response: Response):           
         return JSONResponse({"ok": False, "error": "Username already taken"}, status_code=409)          # возврат ошибки с статус кодом 409
 
     try:
-        cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, password))     # попытка вставить данные 
+        # Хэшируем пароль перед сохранением
+        hashed_password_bytes = create_saltpassword(password)
+        hashed_password_text = hashed_password_bytes.decode("utf-8")
+        cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, hashed_password_text))     # попытка вставить данные 
         conn.commit()       
     except Exception as err:                                        
         return JSONResponse({"ok": False, "error": str(err)}, status_code=500)                          # выозврат ошибки со статус кодом 500
