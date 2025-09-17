@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, Response, APIRouter 
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
@@ -156,7 +156,7 @@ async def reg_page(request: Request):                                           
 
 
 
-@app.get("/get_jwt")                                                            # обработчик get на /get_jwt генерация токена 
+@app.post("/get_jwt")                                                           # обработчик post на /get_jwt генерация токена 
 def get_jwt(username: str, response: Response):                                 # функция для /get_jwt с передачей юз для генерации токена и респонса для записи токена в куки
     token = auth.create_access_token(uid=username)                              # генерация токена по юз
     response.set_cookie(config.JWT_ACCESS_COOKIE_NAME, token, httponly=True, samesite="lax") # установкаjwt в куки jwt с ключом как name из конфига 
@@ -175,8 +175,11 @@ def check_jwt(request: Request):                                                
         return JSONResponse({"error": str(e)}, status_code=401)                     # если не получается то возврат ошибки с описанием + статус код 401
 
 
-@app.get("/checkuser")                                                              # обработчик get на /checkuser для проверки пользователя
-async def user_check(username: str, password: str, response: Response):             # асинхронная функция принимаюяя юз пасворд и респонс для записи в куки
+@app.post("/checkuser")                                                             # обработчик post на /checkuser для проверки пользователя
+async def user_check(request: Request, response: Response):                           # принимает тело запроса с юз и паролем, респонс для записи в куки
+    body = await request.json()
+    username = body.get("username") if isinstance(body, dict) else None
+    password = body.get("password") if isinstance(body, dict) else None
     if not username or not password:                                                # если не передан проль или юз то
         return JSONResponse({"ok": False, "error": "Missing username or password"}, status_code=400)    # возврат ошибки с статус кодом 400
 
@@ -188,8 +191,11 @@ async def user_check(username: str, password: str, response: Response):         
     return {"ok": True, "redirect": "/main"}
     
 
-@app.get("/adduser")                                                                                    # обработчик get на /adduser для добавления пользователя
-async def add_user(username: str, password: str, response: Response):                                   # асинхронная функция принимает юз пасворд и респонс для записи в куки jwt 
+@app.post("/adduser")                                                                                   # обработчик post на /adduser для добавления пользователя
+async def add_user(request: Request, response: Response):                                                # принимает тело запроса, записывает jwt 
+    body = await request.json()
+    username = body.get("username") if isinstance(body, dict) else None
+    password = body.get("password") if isinstance(body, dict) else None
     if not username or not password:                                                                    # если не передан проль или юз то
         return JSONResponse({"ok": False, "error": "Missing username or password"}, status_code=400)    # возврат ошибки с статус кодом 400
 

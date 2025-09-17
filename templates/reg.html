@@ -41,9 +41,11 @@
             return;
         }
 
-        fetch(`/adduser?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`, {
-            method: 'GET',
-            credentials: 'include'
+        fetch('/adduser', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
         })
         .then(async (response) => {
             const data = await response.json();
